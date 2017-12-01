@@ -6,13 +6,15 @@ using namespace cv;
 
 int main(int, char* [])
 {
-    // Создание видеопотока с камеры
     VideoCapture video(0);
     Mat frame, curr, prev, curr64f, prev64f, hann;
     int key = 0;
 
     do
     {
+        for(int i = 0; i < 7; i++) {
+            video.grab();
+        }
         video >> frame; // Очередной фрейм
         cvtColor(frame, curr, CV_RGB2GRAY); // Перевод в градации серого
 
