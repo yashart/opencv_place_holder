@@ -4,6 +4,8 @@
 
 using namespace cv;
 
+void display_img(Mat frame, Point2d shift);
+
 int main(int, char* [])
 {
     VideoCapture video(0);
@@ -15,37 +17,39 @@ int main(int, char* [])
         for(int i = 0; i < 7; i++) {
             video.grab();
         }
-        video >> frame; // Очередной фрейм
-        cvtColor(frame, curr, CV_RGB2GRAY); // Перевод в градации серого
+        video >> frame;
+        cvtColor(frame, curr, CV_RGB2GRAY);
 
         if(prev.empty())
         {
-            prev = curr.clone(); // клонирование изображения
-            createHanningWindow(hann, curr.size(), CV_64F); // Создание окна Ханна
+            prev = curr.clone();
+            createHanningWindow(hann, curr.size(), CV_64F);
         }
 
         prev.convertTo(prev64f, CV_64F);
         curr.convertTo(curr64f, CV_64F);
 
-        Point2d shift = phaseCorrelate(prev64f, curr64f, hann); // Фазовая корреляция
-        //double radius = cv::sqrt(shift.x*shift.x + shift.y*shift.y); // Вычисление радиуса отклонения
+        Point2d shift = phaseCorrelate(prev64f, curr64f, hann);
 
-        /*
-        if(radius > 5)
-        {
-            // вывод на экран окружности и направления смещения
-            Point center(curr.cols >> 1, curr.rows >> 1);
-            cv::circle(frame, center, (int)radius, cv::Scalar(0, 255, 0), 3, CV_AA);
-            cv::line(frame, center, Point(center.x + (int)shift.x, center.y + (int)shift.y), cv::Scalar(0, 255, 0), 3, CV_AA);
-        }
-        */
-
-        //imshow("phase shift", frame);
+        display_img(frame, shift);
+        
         printf("x shift: %d, y shift %d\n", (int)shift.x, (int)shift.y);
         key = waitKey(2);
 
-        prev = curr.clone();
-    } while((char)key != 27); // Esc to exit...
+        //prev = curr.clone();
+    } while((char)key != 27);
 
     return 0;
+}
+
+void display_img(Mat frame, Point2d shift) {
+        double radius = cv::sqrt(shift.x*shift.x + shift.y*shift.y);	
+	if(radius > 5)
+        {
+            Point center(frame.cols >> 1, frame.rows >> 1);
+            cv::circle(frame, center, (int)radius, cv::Scalar(0, 255, 0), 3, CV_AA);
+            cv::line(frame, center, Point(center.x + (int)shift.x, center.y + (int)shift.y), cv::Scalar(0, 255, 0), 3, CV_AA);
+        }
+        
+        imshow("phase shift", frame);
 }
