@@ -9,11 +9,16 @@
 #include <unistd.h>
 
 #include "uart.h"
+#include "send_img_ssh.h"
+
 
 using namespace cv;
 
 void display_img(Mat frame, Point2d shift);
+void save_img(Mat frame, Point2d shift);
 
+//argv[1] - serial port
+//argv[2] - param scp
 int main(int argc, char* argv[])
 {
     VideoCapture video(0);
@@ -39,8 +44,10 @@ int main(int argc, char* argv[])
 
         Point2d shift = phaseCorrelate(prev64f, curr64f, hann);
 
+        save_img(frame, shift);
+        fork_and_exec_scp("img.jpg", argv[2]);
         //display_img(frame, shift);
-        
+        /*
         //printf("x shift: %d, y shift %d\n", (int)shift.x, (int)shift.y);
         //key = waitKey(2);
 
@@ -57,10 +64,10 @@ int main(int argc, char* argv[])
 
         write (fd, "hello!\n", 7);           // send 7 character greeting
         usleep ((7 + 25) * 100);
-        char buf [100];
+        char buf [7] = {};
         int n = read (fd, buf, sizeof buf);  // read up to 100 characters if ready to read
-        printf("Hello, %s", buf);
-
+        printf("Hello, %s\n", buf);
+        */
         //prev = curr.clone();
     } while((char)key != 27);
 
@@ -79,4 +86,14 @@ void display_img(Mat frame, Point2d shift) {
         imshow("phase shift", frame);
 }
 
+void save_img(Mat frame, Point2d shift) {
+    double radius = cv::sqrt(shift.x*shift.x + shift.y*shift.y);
+    if(radius > 5)
+    {
+        Point center(frame.cols >> 1, frame.rows >> 1);
+        cv::circle(frame, center, (int)radius, cv::Scalar(0, 255, 0), 3, CV_AA);
+        cv::line(frame, center, Point(center.x + (int)shift.x, center.y + (int)shift.y), cv::Scalar(0, 255, 0), 3, CV_AA);
+    }
 
+    imwrite("img.jpg", frame);
+}
