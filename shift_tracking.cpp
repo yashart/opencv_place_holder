@@ -28,7 +28,7 @@ int main(int argc, char* argv[])
             perror("Opening video device");
             return 1;
     }
-    if(init_mmap(videofd, videobuffer))
+    if(init_mmap(videofd, &videobuffer))
         return 1;
 
     Mat frame, curr, prev, curr64f, prev64f, hann;
@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 
     do
     {
-        frame = capture_image(videofd, videobuffer);
+        capture_image(videofd, &videobuffer, &frame);
         cvtColor(frame, curr, CV_RGB2GRAY);
 
         if(prev.empty())

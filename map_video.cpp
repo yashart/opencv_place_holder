@@ -21,7 +21,7 @@ static int xioctl(int fd, int request, void *arg)
         return r;
 }
 
-int init_mmap(int fd, uint8_t *buffer)
+int init_mmap(int fd, uint8_t **buffer)
 {
     struct v4l2_requestbuffers req = {0};
     req.count = 1;
@@ -44,14 +44,14 @@ int init_mmap(int fd, uint8_t *buffer)
         return 1;
     }
 
-    buffer = (uint8_t*) mmap (NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
-    printf("Length: %d\nAddress: %p\n", buf.length, buffer);
+    *buffer = (uint8_t*) mmap (NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
+    printf("Length: %d\nAddress: %p\n", buf.length, *buffer);
     printf("Image Length: %d\n", buf.bytesused);
 
     return 0;
 }
 
-cv::Mat capture_image(int fd, uint8_t *buffer)
+int capture_image(int fd, uint8_t **buffer, cv::Mat* mat)
 {
     struct v4l2_buffer buf = {0};
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -60,13 +60,13 @@ cv::Mat capture_image(int fd, uint8_t *buffer)
     if(-1 == xioctl(fd, VIDIOC_QBUF, &buf))
     {
         perror("Query Buffer");
-        return cv::Mat();
+        return 1;
     }
 
     if(-1 == xioctl(fd, VIDIOC_STREAMON, &buf.type))
     {
         perror("Start Capture");
-        return cv::Mat();
+        return 1;
     }
 
     fd_set fds;
@@ -78,16 +78,19 @@ cv::Mat capture_image(int fd, uint8_t *buffer)
     if(-1 == r)
     {
         perror("Waiting for Frame");
-        return cv::Mat();
+        return 1;
     }
 
     if(-1 == xioctl(fd, VIDIOC_DQBUF, &buf))
     {
         perror("Retrieving Frame");
-        return cv::Mat();
+        return 1;
     }
 
-    CvMat oldmat = cvMat(480, 640, CV_8UC3, (void*)buffer);
-    return cv::Mat(&oldmat, 1);
+    CvMat oldmat = cvMat(480, 640, CV_8UC3, (void*)*buffer);
+    IplImage* frame = cvDecodeImage(&oldmat, 1);
+    *mat = cv::Mat(frame, 1);
+
+    return 0;
 }
 
