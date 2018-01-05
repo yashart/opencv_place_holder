@@ -10,7 +10,7 @@
 
 #include "uart.h"
 #include "send_img_ssh.h"
-
+#include "map_video.h"
 
 using namespace cv;
 
@@ -21,53 +21,59 @@ void save_img(Mat frame, Point2d shift);
 //argv[2] - param scp
 int main(int argc, char* argv[])
 {
-    VideoCapture video(0);
+    uint8_t* videobuffer;
+    int videofd = open("/dev/video0", O_RDWR);
+    if (videofd == -1)
+    {
+            perror("Opening video device");
+            return 1;
+    }
+    if(init_mmap(videofd, videobuffer))
+        return 1;
+
     Mat frame, curr, prev, curr64f, prev64f, hann;
     int key = 0;
 
     do
     {
-        for(int i = 0; i < 7; i++) {
-            video.grab();
-        }
-        video >> frame;
+        frame = capture_image(videofd, videobuffer);
         cvtColor(frame, curr, CV_RGB2GRAY);
 
         if(prev.empty())
         {
             prev = curr.clone();
-            createHanningWindow(hann, curr.size(), CV_64F);
+            createHanningWindow(hann, curr.size(), CV_32F);
         }
 
-        prev.convertTo(prev64f, CV_64F);
-        curr.convertTo(curr64f, CV_64F);
+        prev.convertTo(prev64f, CV_32F);
+        curr.convertTo(curr64f, CV_32F);
 
         Point2d shift = phaseCorrelate(prev64f, curr64f, hann);
 
         save_img(frame, shift);
         fork_and_exec_scp("img.jpg", argv[2]);
         //display_img(frame, shift);
-        /*
+
         //printf("x shift: %d, y shift %d\n", (int)shift.x, (int)shift.y);
         //key = waitKey(2);
 
-        int fd = open (argv[1], O_RDWR | O_NOCTTY | O_SYNC);
-        if (fd < 0)
+        int uartfd = open (argv[1], O_RDWR | O_NOCTTY | O_SYNC);
+        if (uartfd < 0)
         {
                 fprintf (stderr, "error %d opening %s: %s", errno, argv[1], strerror (errno));
                 return 0;
         }
 
-        set_interface_attribs (fd, 115200, 0);  // set speed to 115,200 bps, 8n1 (no parity)
-        set_blocking (fd, 0);                // set no blocking
+        set_interface_attribs (uartfd, 115200, 0);  // set speed to 115,200 bps, 8n1 (no parity)
+        set_blocking (uartfd, 0);                // set no blocking
 
 
-        write (fd, "hello!\n", 7);           // send 7 character greeting
+        write (uartfd, "hello!\n", 7);           // send 7 character greeting
         usleep ((7 + 25) * 100);
         char buf [7] = {};
-        int n = read (fd, buf, sizeof buf);  // read up to 100 characters if ready to read
+        int n = read (uartfd, buf, sizeof buf);  // read up to 100 characters if ready to read
         printf("Hello, %s\n", buf);
-        */
+
         //prev = curr.clone();
     } while((char)key != 27);
 
