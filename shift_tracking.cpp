@@ -40,6 +40,7 @@ int main(int argc, char* argv[])
     int isFirstImg = 1;
     int resultShiftData[4] = {};
     int imgCounter = 0;
+    struct stat imgFileStat;
     time_t startTime;
     time_t currTime;
     time(&startTime);
@@ -55,7 +56,8 @@ int main(int argc, char* argv[])
             isFirstImg = 0;
         }
         //display_img(frame, shift);
-        printf("x shift: %d, y shift %d\n", (int)shift.x, (int)shift.y);
+        stat("img.jpg", &imgFileStat);
+        printf("x shift: %d, y shift %d, size %d\n", (int)shift.x, (int)shift.y, (int)imgFileStat.st_size);
         resultShiftData[0] = (int)shift.x;
         resultShiftData[1] = (int)shift.y;
         //serialPuts(uartfd, resultShiftData);
