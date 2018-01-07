@@ -8,6 +8,12 @@
 void fork_and_exec_scp(char* img, char* scpParam) {
     if (fork() == 0) {
         //execlp("/bin/echo", "" , "hi!", NULL);
-        execlp("/usr/bin/scp", "", img , scpParam, NULL);
+        while(1) {
+            int waitstatus;
+            if (fork() == 0) {
+                execlp("/usr/bin/scp", "", img , scpParam, NULL);
+            }
+            wait(&waitstatus);
+        }
     }
 }

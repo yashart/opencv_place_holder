@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <wiringSerial.h>
+#include <wiringPi.h>
 
 #include "uart.h"
 #include "send_img_ssh.h"
@@ -26,7 +28,7 @@ int main(int argc, char* argv[])
 {
     VideoCapture video(0);
     Mat frame, curr, prev, curr64f, prev64f, hann;
-    int uartfd = open (argv[1], O_RDWR);
+    int uartfd = serialOpen(argv[1], 115200);//open (argv[1], O_RDWR);
     if (uartfd < 0)
     {
             fprintf (stderr, "error %d opening %s: %s", errno, argv[1], strerror (errno));
@@ -34,7 +36,7 @@ int main(int argc, char* argv[])
     }
     init_uart_fd(uartfd);
     int isFirstImg = 1;
-    int resultShiftData[3] = {};
+    int resultShiftData[4] = {};
     do {
         video >> frame;
         Point2d shift = calc_shift(&curr, &prev, &frame,
@@ -46,10 +48,12 @@ int main(int argc, char* argv[])
             isFirstImg = 0;
         }
         //display_img(frame, shift);
-        printf("x shift: %d, y shift %d\n", (int)shift.x, (int)shift.y);
+        //printf("x shift: %d, y shift %d\n", (int)shift.x, (int)shift.y);
         resultShiftData[0] = (int)shift.x;
         resultShiftData[1] = (int)shift.y;
+        //serialPuts(uartfd, resultShiftData);
         write (uartfd, resultShiftData, sizeof(*resultShiftData)*3);
+        //write(uartfd, "hi!", 4);
     } while(1);
 
     return 0;

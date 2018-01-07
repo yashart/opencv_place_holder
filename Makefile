@@ -4,7 +4,7 @@ LDFLAGS=
 SOURCES=shift_tracking.cpp send_img_ssh.cpp uart.cpp map_video.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=tracking.out
-LFLAGS = -I/usr/include -L/usr/local/lib -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_video
+LFLAGS = -I/usr/include -L/usr/local/lib -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_video -lwiringPi -lpthread
 
 all: $(SOURCES) $(EXECUTABLE)
 	
