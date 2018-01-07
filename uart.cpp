@@ -62,3 +62,8 @@ void set_blocking (int fd, int should_block)
         if (tcsetattr (fd, TCSANOW, &tty) != 0)
                 fprintf (stderr, "error %d setting term attributes", errno);
 }
+
+void init_uart_fd(int fd) {
+    set_interface_attribs (fd, 115200, 0);  // set speed to 115,200 bps, 8n1 (no parity)
+    set_blocking (fd, 1);                // set no blocking
+}
